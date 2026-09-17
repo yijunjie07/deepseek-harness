@@ -114,7 +114,7 @@ describe('real Loader composition', () => {
     expect((await api('')).status).toBe(401)
     const view = await (await api(first)).json() as { sessions: { id: string }[] }
     expect(view.sessions).toHaveLength(2)
-    const revoked = await api(first, { action: 'revoke', id: view.sessions[1].id })
+    const revoked = await api(first, { action: 'revoke', id: view.sessions[1]!.id })
     expect(revoked.status).toBe(200)
     expect(revoked.headers.get('cache-control')).toBe('no-store')
     expect((await api(second)).status).toBe(401)
