@@ -51,7 +51,7 @@ The package realizes one ownership rule: the browser keeps one shared mirror of 
 
 ### The describe mirror
 
-The plugin injects `remote` with its `settings` namespace, resolves Host persistence once from the fixed `remote.$host` facts, and owns the one `settings.describe` reader in the browser: a shared mirror refreshed on every forwarded `settings/document-updated` event and on `connection/reset` (the first connection included, closing the window where a commit lands between the eager read and the SSE subscription). Cross-namespace surfaces read it through `ctx.settingsScope.describe()`, a read/fold face (`getSnapshot`/`subscribe`/`ensure`, plus `acceptView` folding a write answer in).
+The plugin enables Host persistence for loopback clients and for remote browsers whose authenticated HTML advertises managed login through `__DSH_BROWSER_SECURITY__`. This UI policy does not replace Connection authentication or change `remote.$host.isLoopback`. The shared `settings.describe` mirror refreshes on forwarded `settings/document-updated` events and `connection/reset`, including the first connection. Cross-namespace surfaces read it through `ctx.settingsScope.describe()`, a read/fold face (`getSnapshot`/`subscribe`/`ensure`, plus `acceptView` folding a write answer in).
 
 ### Scope derivation
 
@@ -94,7 +94,7 @@ None; this package neither assembles nor sends a provider request.
 
 These limits define where the settings transport cannot reach; they are current package constraints.
 
-- **Non-loopback pages get no durable settings** — this Client keeps Host persistence disabled there, so a scope starts `unavailable` and never crosses the wire; every row it backs is inert even though Connection authentication covers the API.
+- **Unmanaged non-loopback pages get no durable settings** — their mirror stays `unavailable` and issues no settings reads. Opt-in managed login enables shared Host settings, including models, preferences, and onboarding acknowledgement; it does not enable native configuration-file actions.
 
 <a id="dev-note"></a>
 ### Dev Note

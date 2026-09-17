@@ -1,5 +1,7 @@
 /** Real Web composition: device revocation, live socket cutoff, and recoverable global rotation. */
 import { fileURLToPath } from 'node:url'
+import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import { chromium } from 'playwright'
 import { expect, it } from 'vitest'
 import { launchWebScaffold, compareOrRefreshGolden, webSnapshotMode } from './scaffold.ts'
@@ -69,3 +71,55 @@ it('manages browser sessions through the shipped settings plugins', async () => 
     await scaffold.close()
   }
 }, 120_000)
+
+it('persists model settings from an authenticated non-loopback browser', async () => {
+  const scaffold = await launchWebScaffold({
+    extraOverlayPath: fileURLToPath(new URL('./browser-security.overlay.yml', import.meta.url)),
+  })
+  let browser: Awaited<ReturnType<typeof chromium.launch>> | undefined
+  try {
+    const address = new URL(scaffold.authenticatedUrl)
+    address.hostname = 'managed.dsh.test'
+    browser = await chromium.launch({
+      args: ['--host-resolver-rules=MAP managed.dsh.test 127.0.0.1', '--no-proxy-server'],
+    })
+    const context = await browser.newContext({ locale: 'zh-CN' })
+    const page = await context.newPage()
+    const errors: string[] = []
+    page.on('pageerror', error => errors.push(error.message))
+    await page.goto(address.href)
+    expect(new URL(page.url()).hostname).toBe('managed.dsh.test')
+    await page.getByRole('button', { name: '设置', exact: true }).click()
+    const dialog = page.getByRole('dialog', { name: '设置' })
+    expect(await dialog.getByRole('button', { name: '打开配置文件' }).count()).toBe(0)
+    await dialog.getByRole('button', { name: '模型', exact: true }).click()
+    const add = dialog.getByRole('button', { name: '添加提供方', exact: true })
+    await expect.poll(() => add.isEnabled()).toBe(true)
+    await add.click()
+    await dialog.getByLabel('提供方', { exact: true }).selectOption('minimax-cn')
+    await dialog.getByRole('button', { name: '保存', exact: true }).click()
+    await dialog.getByText('已保存 minimax-cn。', { exact: true }).waitFor()
+    expect(await readFile(join(scaffold.harnessHome, 'settings.yaml'), 'utf8')).toContain('minimax-cn: {}')
+
+    await page.reload()
+    await page.getByRole('button', { name: '设置', exact: true }).click()
+    await dialog.getByRole('button', { name: '模型', exact: true }).click()
+    await dialog.getByRole('button', { name: '编辑 minimax-cn', exact: true }).waitFor()
+    await compareOrRefreshGolden(
+      fileURLToPath(new URL('./expected/browser-security/remote-models.expected.md', import.meta.url)),
+      (await dialog.getByRole('button', { name: /^(编辑|删除) minimax-cn$/ }).allTextContents()).join('\n'),
+      webSnapshotMode(),
+    )
+    const logout = await page.evaluate(async () => (await fetch('/api/browser-security', {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'logout' }),
+    })).status)
+    expect(logout).toBe(200)
+    expect(await page.evaluate(async () => (await fetch('/api/settings/describe', {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}',
+    })).status)).toBe(401)
+    expect(errors).toEqual([])
+  } finally {
+    await browser?.close()
+    await scaffold.close()
+  }
+})

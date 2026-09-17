@@ -26,7 +26,7 @@ export interface SettingsDescribeView {
 /** Mirror state every derived settings surface renders from. */
 export interface SettingsMirrorSnapshot {
   /**
-   * `unavailable` is the terminal non-loopback state; `ready` persists across
+   * `unavailable` is the terminal memory-only state; `ready` persists across
    * later failed refreshes (the held view keeps serving); `idle` means no
    * answer is held and no read is running, so `ensure` will start one.
    */

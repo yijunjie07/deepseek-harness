@@ -53,9 +53,11 @@ export const inject = ['remote', 'remote.settings']
  */
 export function apply(ctx: Context): void {
   const schema = new SettingsSchemaService(ctx)
-  // Resolved once here, where `remote` is declared in this plugin's own
-  // `inject`; the binder hands the same answer to every scope it binds.
-  const persistence = ctx.remote.$host.isLoopback ? 'host' : 'memory'
+  // Managed login advertises remote administration in authenticated HTML.
+  // Connection still authenticates every API call; this flag only selects UI persistence.
+  const hostSettings = ctx.remote.$host.isLoopback
+    || Reflect.get(globalThis, '__DSH_BROWSER_SECURITY__') === true
+  const persistence = hostSettings ? 'host' : 'memory'
   const mirror = new SettingsDescribeMirror(ctx, persistence)
   ctx.effect(() => {
     const disposers = [

@@ -2,3 +2,4 @@
   config:
     browserSessionManagement: true
     secureCookie: false
+    trustedHosts: [managed.dsh.test]

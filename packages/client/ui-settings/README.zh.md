@@ -51,7 +51,7 @@ kind: "package-reference"
 
 ### Describe 镜像
 
-插件注入 `remote` 及其 `settings` 命名空间，从固定的 `remote.$host` 事实一次性解析 Host 持久化模式，并持有浏览器中唯一的 `settings.describe` 读取方：一面共享镜像，在每次转发的 `settings/document-updated` 事件与 `connection/reset` 时刷新（首次连接也包含在内，关闭「提交落在急切读取与 SSE 订阅之间」的窗口）。跨命名空间表面通过 `ctx.settingsScope.describe()` 读它，这是一个读取/折叠面（`getSnapshot`/`subscribe`/`ensure`，另有把写应答折入的 `acceptView`）。
+插件为回环客户端，以及已认证 HTML 通过 `__DSH_BROWSER_SECURITY__` 声明受管理登录的远程浏览器启用 Host 持久化。此 UI 策略不替代 Connection 认证，也不改变 `remote.$host.isLoopback`。共享的 `settings.describe` 镜像在转发的 `settings/document-updated` 事件和 `connection/reset` 时刷新，包括首次连接。跨命名空间界面通过 `ctx.settingsScope.describe()` 读取它，这是一个读取/折叠接口（`getSnapshot`/`subscribe`/`ensure`，另有把写应答折入的 `acceptView`）。
 
 ### Scope 派生
 
@@ -94,7 +94,7 @@ kind: "package-reference"
 
 这些限制说明设置传输层够不到的地方；它们是当前包约束。
 
-- **非 loopback 页面没有持久化设置**：本 Client 在那里禁用 Host 持久化，因此 scope 以 `unavailable` 起步且从不跨线路；尽管 Connection 认证覆盖 API，它支撑的每一行仍在那里无效。
+- **未受管理的非回环页面没有持久化设置**：其镜像保持 `unavailable`，不发出设置读取请求。显式启用的受管理登录支持共享 Host 设置，包括模型、偏好和引导确认；它不会启用原生配置文件操作。
 
 <a id="dev-note"></a>
 ### 开发备注

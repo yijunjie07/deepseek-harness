@@ -1,21 +1,36 @@
 import { Context } from '@deepseek-ai/cordis'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { TestRemote } from '@deepseek-ai/dsh-client-test-runtime'
 import { apply, inject } from '../src/client/index.ts'
 import { SettingsSchemaService } from '../src/client/schema.ts'
 import { SettingsScopeBinder } from '../src/client/settings-scope.ts'
 import { apply as hostApply } from '../src/index.ts'
 
-function bench() {
+function bench(isLoopback = true) {
   const describeCall = vi.fn().mockResolvedValue({
     ok: true, value: { writable: true, hasDocument: true, namespaces: [] },
   })
   const ctx = new Context()
   const remote = new TestRemote(ctx, { settings: { describe: describeCall } })
-  return { ctx, describeCall, remote, fiber: ctx.plugin({ inject: [...inject], apply }) }
+  remote.$host = { home: undefined, isLoopback }
+  const fiber = ctx.plugin({ inject: [...inject], apply })
+  onTestFinished(() => fiber.dispose())
+  return { ctx, describeCall, remote, fiber }
 }
 
 describe('settings domain base plugin', () => {
+  it.each([undefined, false, true])('selects remote persistence from managed login mode %s', async (managed) => {
+    vi.stubGlobal('__DSH_BROWSER_SECURITY__', managed)
+    onTestFinished(() => { vi.unstubAllGlobals() })
+    const { ctx, describeCall, remote, fiber } = bench(false)
+    await fiber.await()
+    const mirror = ctx.settingsScope.describe()
+    await mirror.ensure()
+    expect(mirror.getSnapshot().status).toBe(managed === true ? 'ready' : 'unavailable')
+    expect(describeCall).toHaveBeenCalledTimes(managed === true ? 1 : 0)
+    expect(remote.$host.isLoopback).toBe(false)
+  })
+
   it('keeps the host Loader entry inert', () => {
     expect(hostApply).not.toThrow()
   })

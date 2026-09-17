@@ -12,6 +12,10 @@ pnpm dsh --profile web --patch apps/cli/config/examples/browser-security.patch.y
 
 The overlay replaces the Connection row's configuration and preserves the trusted hosts supplied by the Web runtime. It sets Secure cookies, a 30-day absolute lifetime, and a maximum of 100 active sessions. Existing stateless cookies require a fresh login using the startup URL; other application data is unchanged. Managed credentials are stored through the normal credential provider and must be included in private backups.
 
+## Configure models remotely
+
+After signing in, open **Settings → Models** to configure providers. Managed sessions use shared server settings: model configuration, preferences, and onboarding acknowledgement persist across reloads. Provider API keys remain write-only credentials. Remote browsers do not offer **Open configuration file**, which launches a native editor on the server. Every authenticated browser is an administrator, not a separate user account.
+
 ## Manage devices
 
 Open **Settings → Login security**. Each login from a fresh browser cookie jar creates a device session. Rename a device to identify it; the browser description is not a verified hardware identity. A copied cookie shares the same session and is revoked with it. Refresh the list to see activity, including connection heartbeats.

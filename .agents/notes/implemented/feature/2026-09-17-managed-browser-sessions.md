@@ -16,9 +16,13 @@ Login and mutations serialize durable writes before publishing cookies or revoca
 
 Gateway revalidates upgraded connections immediately on revocation, before incoming and outgoing stream messages, and on its existing heartbeat. Already-dispatched unary operations are not rolled back. Last activity includes heartbeats, is tracked in memory, and is checkpointed during subsequent session mutations. Sessions retain an absolute expiry and are bounded by `maxBrowserSessions`, default 100. At capacity, token login is refused until a session expires or is revoked.
 
+Managed login also enables the shared Host settings mirror in remote browsers. The existing authenticated HTML flag selects persistence for models, preferences, and onboarding; Connection remains the authentication authority. `isLoopback` retains its actual meaning, so native configuration-file actions remain local-only. A second settings opt-in would leave an authenticated administrator with an unusable Models page unless both switches were coordinated.
+
 ## Verification
 
 Owner-local tests cover independent device revocation, restart persistence, failed writes, concurrent login commits, authority isolation, Origin checks, expiry, capacity, and independent cookie/token/key rotation. The real Loader HTTP composition exercises token exchange, authenticated management, revoked index/API access, and route disposal. The Web scenario boots the shipped plugins with an opt-in overlay and checks localized controls, renaming, live socket cutoff, cookie renewal, and a usable recovery link after global rotation.
+
+The non-loopback Web regression uses a trusted test hostname with Chromium-only loopback routing. It saves a provider through the Models UI, checks the isolated settings file, reloads the saved row, verifies that no native configuration-file action appears, and checks that logout blocks settings API access. Unit coverage retains the unmanaged remote memory-only policy.
 
 ## Alternatives considered
 
