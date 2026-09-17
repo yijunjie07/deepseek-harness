@@ -108,10 +108,11 @@ async function mounted(config?: ConnectionConfig): Promise<{
 function browserCookie(connection: HostConnectionHandle, authority: string): string {
   const url = new URL(connection.authenticatedUrl(`http://${authority}`))
   const exchanged = fakeResponse()
-  connection.authorizeIndex(
+  const authorized = connection.authorizeIndex(
     fakeRequest({ host: authority }, `${url.pathname}${url.search}`),
     exchanged.response,
   )
+  expect(authorized).toBe(false)
   const setCookie = exchanged.state.headers?.['set-cookie']
   if (setCookie === undefined) throw new Error('browser token exchange did not set a cookie')
   return setCookie.split(';', 1)[0]!

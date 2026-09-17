@@ -38,6 +38,13 @@ cookie 签名密钥是 `ctx.credentials` 中由 `client-connection/browser-sessi
 
 认证之前，每个请求仍经过 `src/api-request-trust.ts`。其 `Host` 必须是 loopback，或与 `trustedHosts` 条目匹配：带端口的 `host:port` 精确匹配，不带端口的条目匹配任意端口，两侧均经 WHATWG 归一化。若附带 `Origin`，它必须等于该 Host；`sec-fetch-site: cross-site` 一律拒绝。畸形配置 authority 会让插件加载失败。这些检查防御 DNS rebinding 与跨站浏览器请求，绝不建立身份。Host/Origin 校验失败返回 403；Host 可信但未认证的请求返回 401。`dsh web --host 0.0.0.0` 仍不受支持。决策记录：[浏览器请求信任](../../../.agents/notes/implemented/architecture/2026-07-28-api-browser-trust-boundary.zh.md)与[浏览器令牌认证](../../../.agents/notes/implemented/architecture/2026-08-24-browser-token-authentication.zh.md)。
 
+<a id="managed-browser-sessions"></a>
+### 浏览器会话管理
+
+在 Connection 行设置 `browserSessionManagement: true` 即可启用“设置 → 登录安全”。经 HTTPS 反代时，还需设置 `secureCookie: true`，将域名放入 `trustedHosts`，并由代理保留 Host。首次启用会拒绝旧 cookie，需要重新登录。独立的 `client-connection/managed-browser-sessions` 记录让会话和签名密钥跨重启保存。`maxBrowserSessions` 默认 100；`cookieMaxAgeDays` 仍控制绝对有效期。每个 Harness home 只能有一个活动 Web 进程持有该记录。
+
+已认证的 `/api/browser-security` 路由列出按 authority 隔离的设备，接受用于改名、撤销、当前 cookie 更新、启动令牌或全局签名密钥轮换的 JSON POST 操作。修改要求完全同源的 Origin，包括协议。全部退出和密钥轮换撤销所有 authority，并返回新的启动链接；离开页面前请保存。其他撤销操作不改变启动令牌。撤销会断开活动 Gateway socket，但不能撤回已分发的一元操作。最近活动包含心跳检查，并随会话修改保存检查点。参见[决策记录](../../../.agents/notes/implemented/feature/2026-09-17-managed-browser-sessions.zh.md)。
+
 <a id="connection-generation"></a>
 ## Connection generation
 
@@ -64,8 +71,8 @@ API Gateway Client 把内部 `$events` 逻辑流注册为唯一 generation sourc
 <a id="known-limitations-and-deferred-work"></a>
 
 - **缓冲型 `/api` 路由会把每个请求体保留在内存里**：`maxRequestBodyBytes`（默认 300 MiB，按默认 200 MiB 图片总量上限经 base64 膨胀加信封余量得出）限制普通图片与 RPC 信封。显式启用的流式路由接收带背压的分块并绕过总量上限；路由实现负责持久化、取消与存储配额。
-- **浏览器 cookie 不带 `Secure`**：当前随产品提供的传输方式是 loopback HTTP；若部署经明文网络暴露同一 authority，bearer cookie 可能在传输中泄露。
-- **没有 logout 操作**：清除浏览器 cookie 会结束单个浏览器会话；删除 owner 凭据记录并重启 `dsh` 会撤销全部会话。
+- **默认无状态 cookie 不带 `Secure`，且没有 logout API**：管理模式提供这些显式启用的功能；loopback HTTP 仍是默认传输方式。
+- **复制的 cookie 属于同一设备会话**：管理模式识别凭据而非物理设备；不提供多用户角色、分布式失效通知或旧密钥宽限期。
 
 
 <a id="dev-note"></a>

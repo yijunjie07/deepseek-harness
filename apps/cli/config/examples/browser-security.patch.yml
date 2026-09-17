@@ -1,0 +1,9 @@
+# HTTPS reverse-proxy deployment. Preserve Host and pass --trusted-host to dsh web.
+# Use only one active Web process per Harness home with managed sessions enabled.
+- id: connection
+  config:
+    trustedHosts: !!js ctx.webRuntime.trustedHosts
+    browserSessionManagement: true
+    secureCookie: true
+    cookieMaxAgeDays: 30
+    maxBrowserSessions: 100

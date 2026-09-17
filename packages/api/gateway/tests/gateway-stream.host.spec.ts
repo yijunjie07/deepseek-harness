@@ -54,7 +54,7 @@ function browserCookie(ctx: Context): string {
   const origin = `http://127.0.0.1:${String(ctx.webServer.port)}`
   const target = new URL(ctx.connection.authenticatedUrl(origin))
   let setCookie: string | undefined
-  ctx.connection.authorizeIndex({
+  const authorized = ctx.connection.authorizeIndex({
     method: 'GET',
     url: `${target.pathname}${target.search}`,
     headers: { host: target.host },
@@ -62,6 +62,7 @@ function browserCookie(ctx: Context): string {
     writeHead(_status, headers) { setCookie = headers?.['set-cookie'] },
     end() {},
   })
+  expect(authorized).toBe(false)
   if (setCookie === undefined) throw new Error('gateway stream fixture did not receive a browser cookie')
   const cookie = setCookie.split(';', 1)[0]!
   browserCookies.set(ctx, cookie)

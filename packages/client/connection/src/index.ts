@@ -9,6 +9,7 @@ import { API_PATH } from './api-path.ts'
 import { bridge, DEFAULT_MAX_REQUEST_BODY_BYTES } from './http-bridge.ts'
 import { assertTrustedAuthority } from './api-request-trust.ts'
 import { BrowserAuth } from './browser-auth.ts'
+import { ManagedBrowserAuth } from './managed-browser-auth.ts'
 import { HostConnectionService } from './rpc-host.ts'
 import { ConnectionRecoveryConfigSchema, resolveConnectionConfig, type ConnectionRecoveryConfig } from './recovery-config.ts'
 
@@ -83,6 +84,12 @@ export interface ConnectionConfig {
   trustedHosts?: string[]
   /** Absolute browser-session lifetime in days. Default: 30. */
   cookieMaxAgeDays?: number
+  /** Enable persistent revocable browser sessions and the login-security API. */
+  browserSessionManagement?: boolean
+  /** Send Secure on managed cookies; enable behind an HTTPS reverse proxy. */
+  secureCookie?: boolean
+  /** Maximum retained active browser sessions across all authorities. Default: 100. */
+  maxBrowserSessions?: number
   /** Maximum buffered JSON body for every `/api` request. Default: 300 MiB. */
   maxRequestBodyBytes?: number
 }
@@ -91,6 +98,9 @@ export const Config: z<ConnectionConfig> = z.object({
   recovery: ConnectionRecoveryConfigSchema.default({}),
   trustedHosts: z.array(String).default([]),
   cookieMaxAgeDays: z.natural().min(1).default(30),
+  browserSessionManagement: z.boolean().default(false),
+  secureCookie: z.boolean().default(false),
+  maxBrowserSessions: z.natural().min(1).default(100),
   maxRequestBodyBytes: z.natural().min(1).default(DEFAULT_MAX_REQUEST_BODY_BYTES),
 })
 
@@ -111,15 +121,27 @@ export async function apply(ctx: Context, config?: ConnectionConfig): Promise<vo
   // silently authorizing its hostname prefix at request time.
   for (const entry of trustedHosts) assertTrustedAuthority(entry)
   assertImageBodyCapacity(ctx, maxRequestBodyBytes)
+  const managed = config?.browserSessionManagement === true
+    ? await ManagedBrowserAuth.create(
+      ctx.root, ctx.credentials, cookieMaxAgeDays, config.secureCookie ?? false, config.maxBrowserSessions ?? 100,
+    )
+    : undefined
   const connection = new HostConnectionService(
     ctx,
     trustedHosts,
-    await BrowserAuth.create(ctx.root, ctx.credentials, cookieMaxAgeDays),
+    managed ?? await BrowserAuth.create(ctx.root, ctx.credentials, cookieMaxAgeDays),
   )
+  if (managed !== undefined) {
+    connection.fetch.register({
+      path: '/api/browser-security', methods: ['GET', 'POST'], requestBody: 'buffered',
+      fetch: request => managed.manage(request),
+    })
+  }
   ctx.inject(['webServer'], (webCtx) => {
     assertImageBodyCapacity(webCtx, maxRequestBodyBytes)
     webCtx.on('webserver/index-inject', (table) => {
       table.push({ kind: 'global', name: '__DSH_CONNECTION_RECOVERY__', value: recovery })
+      if (managed !== undefined) table.push({ kind: 'global', name: '__DSH_BROWSER_SECURITY__', value: true })
     })
     const fetchHandler = connection.createSharedFetchHandler(API_PATH)
     const route: WebRoute = {

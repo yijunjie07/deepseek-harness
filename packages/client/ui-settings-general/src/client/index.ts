@@ -30,6 +30,8 @@ import { SettingsDocumentAction } from './SettingsDocumentAction.tsx'
 import type { SettingsDocumentActionInjected } from './SettingsDocumentAction.tsx'
 import { SettingsDocumentStore } from './settings-document-store.ts'
 import { en, zh, type SettingsKey } from './locales.ts'
+import { BrowserSecuritySection } from './BrowserSecuritySection.tsx'
+import { browserSecurityActions } from './browser-security-api.ts'
 
 export type {
   CloseLabelProps, HeaderContentProps, TriggerContentProps,
@@ -72,6 +74,13 @@ export function apply(ctx: ClientContext): void {
   // seat, and the nav label is a thunk the owner resolves per render — no
   // locale/change re-registration wiring.
   const t = ctx.locale.bind(NS)
+  if (Reflect.get(globalThis, '__DSH_BROWSER_SECURITY__') === true) {
+    const security = browserSecurityActions()
+    ctx.slots.inject('settings.section', () => ctx.slots.register({
+      name: 'settings.section', id: 'browser-security', order: 90,
+      label: () => t('security.nav'), locale: NS, inject: () => security,
+    }, BrowserSecuritySection))
+  }
   // The shared SettingsScope mirror updates after document commits and reconnects.
   const documentController = ctx.remote.$host.isLoopback
     ? new SettingsDocumentStore(ctx, ctx.settingsScope.describe())

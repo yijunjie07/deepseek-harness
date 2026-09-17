@@ -12,6 +12,7 @@ import { bridge } from './http-bridge.ts'
 import { isTrustedApiRequest } from './api-request-trust.ts'
 import { API_PATH } from './api-path.ts'
 import type { BrowserAuth } from './browser-auth.ts'
+import type { ManagedBrowserAuth } from './managed-browser-auth.ts'
 import type {
   ConnectionIndexRequest,
   ConnectionIndexResponse,
@@ -70,7 +71,7 @@ export class HostConnectionService extends Service implements HostConnectionHand
   constructor(
     ctx: Context,
     private readonly trustedHosts: readonly string[],
-    private readonly browserAuth: BrowserAuth,
+    private readonly browserAuth: BrowserAuth | ManagedBrowserAuth,
   ) {
     super(ctx, 'connection')
   }
@@ -100,8 +101,13 @@ export class HostConnectionService extends Service implements HostConnectionHand
   }
 
   /** Authenticate an index request through the process-token exchange or cookie. */
-  authorizeIndex(request: ConnectionIndexRequest, response: ConnectionIndexResponse): boolean {
+  authorizeIndex(request: ConnectionIndexRequest, response: ConnectionIndexResponse): boolean | Promise<boolean> {
     return this.browserAuth.authorizeIndex(request, response)
+  }
+
+  /** Subscribe carriers to committed session invalidation. */
+  watchAuthentication(listener: () => void): () => void {
+    return 'subscribe' in this.browserAuth ? this.browserAuth.subscribe(listener) : () => {}
   }
 
   /** Add this process's launch token to the clean application URL. */

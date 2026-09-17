@@ -400,6 +400,12 @@ export interface ConnectionConfig {
   trustedHosts?: string[]
   /** Absolute browser-session lifetime in days. Default: 30. */
   cookieMaxAgeDays?: number
+  /** Enable persistent revocable browser sessions and the login-security API. */
+  browserSessionManagement?: boolean
+  /** Send Secure on managed cookies; enable behind an HTTPS reverse proxy. */
+  secureCookie?: boolean
+  /** Maximum retained active browser sessions across all authorities. Default: 100. */
+  maxBrowserSessions?: number
   /** Maximum buffered JSON body for every `/api` request. Default: 300 MiB. */
   maxRequestBodyBytes?: number
 }
@@ -422,7 +428,7 @@ export interface ConnectionRecoveryConfig {
 }
 ```
 
-Source: [`packages/client/connection/src/index.ts:72`](../packages/client/connection/src/index.ts)
+Source: [`packages/client/connection/src/index.ts:73`](../packages/client/connection/src/index.ts)
 
 <a id="deepseek-aidsh-client-hmr"></a>
 

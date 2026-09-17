@@ -26,17 +26,20 @@ export class RemoteStreamMuxServer {
   private readonly server = new WebSocketServer({ noServer: true })
   private readonly connections = new Set<Promise<void>>()
   private readonly missedHeartbeats = new WeakMap<WebSocket, number>()
+  private readonly requests = new WeakMap<WebSocket, IncomingMessage>()
   private heartbeatTimer: NodeJS.Timeout | undefined
 
   /**
    * @param open - Gateway stream dispatcher.
    * @param failure - Gateway error-to-wire mapper.
    * @param heartbeatIntervalMs - interval between WebSocket Ping control frames.
+   * @param authorized - rechecks the upgrade cookie before stream operations and heartbeats.
    */
   constructor(
     private readonly open: RemoteStreamOpener,
     private readonly failure: RemoteStreamFailureMapper,
     private readonly heartbeatIntervalMs: number,
+    private readonly authorized: (request: IncomingMessage) => boolean = () => true,
   ) {}
 
   /**
@@ -48,13 +51,22 @@ export class RemoteStreamMuxServer {
   handleUpgrade(req: IncomingMessage, socket: Duplex, head: Buffer): void {
     this.server.handleUpgrade(req, socket, head, (websocket) => {
       this.missedHeartbeats.set(websocket, 0)
+      this.requests.set(websocket, req)
       websocket.on('pong', () => { this.missedHeartbeats.set(websocket, 0) })
       this.startHeartbeat()
-      const connection = new RemoteStreamMuxConnection(websocket, this.open, this.failure)
+      const connection = new RemoteStreamMuxConnection(websocket, this.open, this.failure, () => this.authorized(req))
       const done = connection.run()
       this.connections.add(done)
       void done.then(() => { this.connections.delete(done) })
     })
+  }
+
+  /** Immediately terminate sockets whose cookies were revoked or expired. */
+  revalidate(): void {
+    for (const socket of this.server.clients) {
+      const request = this.requests.get(socket)
+      if (request !== undefined && !this.authorized(request)) socket.terminate()
+    }
   }
 
   /** Terminate all sockets and wait until every iterator has returned. */
@@ -75,6 +87,7 @@ export class RemoteStreamMuxServer {
   private startHeartbeat(): void {
     if (this.heartbeatTimer !== undefined) return
     this.heartbeatTimer = setInterval(() => {
+      this.revalidate()
       for (const socket of this.server.clients) {
         if (socket.readyState !== WebSocket.OPEN) continue
         const missed = this.missedHeartbeats.get(socket) as number
@@ -107,6 +120,7 @@ class RemoteStreamMuxConnection {
     private readonly socket: WebSocket,
     private readonly open: RemoteStreamOpener,
     private readonly failure: RemoteStreamFailureMapper,
+    private readonly authorized: () => boolean,
   ) {}
 
   async run(): Promise<void> {
@@ -114,6 +128,10 @@ class RemoteStreamMuxConnection {
       this.socket.once('close', resolve)
       this.socket.once('error', () => { this.socket.terminate() })
       this.socket.on('message', (data, isBinary) => {
+        if (!this.authorized()) {
+          this.socket.terminate()
+          return
+        }
         if (isBinary) {
           this.socket.close(1003, 'text messages required')
           return
@@ -178,6 +196,10 @@ class RemoteStreamMuxConnection {
   }
 
   private send(message: RemoteStreamServerMessage): Promise<void> {
+    if (!this.authorized()) {
+      this.socket.terminate()
+      return Promise.reject(new Error('browser session expired or revoked'))
+    }
     let text: string
     try {
       text = JSON.stringify(message)

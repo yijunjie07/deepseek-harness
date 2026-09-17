@@ -207,6 +207,7 @@ export class TypertGatewayService extends Service implements TypertGateway {
         (endpoint, payload, signal) => this.openWireStream(endpoint, payload, signal),
         this.wireStream.failure,
         resolved.websocketHeartbeatIntervalMs,
+        request => webCtx.connection.requestRejection(request) === undefined,
       )
       webCtx.effect(() => {
         const route: WebUpgradeRoute = {
@@ -221,8 +222,10 @@ export class TypertGatewayService extends Service implements TypertGateway {
           },
         }
         const unregister = webCtx.webServer.registerUpgrade(route)
+        const unwatch = webCtx.connection.watchAuthentication?.(() => { mux.revalidate() })
         return async () => {
           unregister()
+          unwatch?.()
           await mux.close()
         }
       }, `api-gateway: ${REMOTE_STREAM_MUX_PATH} WebSocket`)

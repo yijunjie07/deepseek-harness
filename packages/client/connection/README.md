@@ -38,6 +38,13 @@ The cookie signing secret is the owner-scoped `client-connection/browser-session
 
 Before authentication, every request still passes `src/api-request-trust.ts`. Its `Host` must be loopback or match a `trustedHosts` entry: exact on `host:port`, any port on port-less entries, both sides WHATWG-normalized. An attached `Origin` must equal that Host and `sec-fetch-site: cross-site` is refused. Malformed configured authorities fail plugin load. These checks defend DNS rebinding and cross-site browser requests; they never establish identity. A failed Host/Origin check returns 403, while a trusted but unauthenticated request returns 401. `dsh web --host 0.0.0.0` remains unsupported. Decision records: [browser request trust](../../../.agents/notes/implemented/architecture/2026-07-28-api-browser-trust-boundary.md) and [browser token authentication](../../../.agents/notes/implemented/architecture/2026-08-24-browser-token-authentication.md).
 
+<a id="managed-browser-sessions"></a>
+### Managed browser sessions
+
+Set `browserSessionManagement: true` on the Connection row to enable Settings → Login security. Behind HTTPS, also set `secureCookie: true` and the domain in `trustedHosts`; preserve Host at the proxy. First activation requires a new login because legacy cookies are rejected. The separate `client-connection/managed-browser-sessions` record persists sessions and signing keys across restarts. `maxBrowserSessions` defaults to 100; `cookieMaxAgeDays` remains the absolute lifetime. Only one active Web process may own this record per Harness home.
+
+The authenticated `/api/browser-security` route lists authority-scoped devices and accepts JSON POST actions for renaming, revocation, current-cookie renewal, and launch-token or global signing-key rotation. Mutations require exact same-origin Origin, including scheme. Global logout and key rotation revoke all authorities and return a fresh launch link; save it before leaving the page. Other revocations leave the launch token unchanged. Revocation disconnects active Gateway sockets; it cannot undo already-dispatched unary operations. Last activity includes heartbeat checks and is checkpointed with session mutations. See the [decision record](../../../.agents/notes/implemented/feature/2026-09-17-managed-browser-sessions.md).
+
 <a id="connection-generation"></a>
 ## Connection generation
 
@@ -64,8 +71,8 @@ None; this package neither assembles nor sends a provider request.
 <a id="known-limitations-and-deferred-work"></a>
 
 - **Buffered `/api` routes retain each request body in memory** — `maxRequestBodyBytes` (default 300 MiB, sized for the default 200 MiB aggregate image limit after base64 expansion plus envelope headroom) bounds ordinary image and RPC envelopes. Opt-in streaming routes receive backpressured chunks and bypass the aggregate cap; route implementations own persistence, cancellation, and any storage quota.
-- **The browser cookie is not marked `Secure`** — loopback HTTP is the shipped transport, so exposing the same authority over plaintext networking can expose the bearer cookie in transit.
-- **There is no logout operation** — clearing the browser cookie ends one browser session; deleting the owner credential record and restarting `dsh` revokes every session.
+- **Default stateless cookies omit `Secure` and have no logout API** — managed mode supplies these opt-in features; loopback HTTP remains the default transport.
+- **A copied cookie is the same device session** — managed mode identifies credentials, not physical devices; it has no multi-user roles, distributed invalidation, or old-key grace period.
 
 
 <a id="dev-note"></a>

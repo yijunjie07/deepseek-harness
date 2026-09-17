@@ -1,0 +1,4 @@
+- id: connection
+  config:
+    browserSessionManagement: true
+    secureCookie: false

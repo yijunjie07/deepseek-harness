@@ -2,6 +2,12 @@
 
 import type { Branded } from '@deepseek-ai/dsh-brand'
 
+/** Opaque identity of one revocable browser login. */
+export type BrowserSessionId = Branded<'browser-session-id'>
+
+/** Public identifier of the active browser-cookie signing key, never its secret. */
+export type BrowserSigningKeyId = Branded<'browser-signing-key-id'>
+
 /** Correlation id minted by a caller and echoed by the Connection response. */
 export type RpcId = Branded<'rpc-id'>
 
@@ -189,7 +195,14 @@ export interface HostConnectionHandle {
    * @param response - response owned when the result is false.
    * @returns true only when the frontend may serve index.html.
    */
-  authorizeIndex(request: ConnectionIndexRequest, response: ConnectionIndexResponse): boolean
+  authorizeIndex(request: ConnectionIndexRequest, response: ConnectionIndexResponse): boolean | Promise<boolean>
+
+  /**
+   * Watch durable authentication changes, when the carrier supports revocation.
+   * @param listener - callback rechecking existing authenticated connections.
+   * @returns disposer removing the callback.
+   */
+  watchAuthentication?(listener: () => void): () => void
 
   /**
    * Add the fresh process token to an ordinary Web application URL.

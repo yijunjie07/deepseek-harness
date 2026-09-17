@@ -1,0 +1,10 @@
+.section { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.controls { border: 0; padding: 0; min-width: 0; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.device { padding: 12px 0; border-bottom: 0.5px solid var(--dsw-alias-border-l2); }
+.device form { display: flex; flex-wrap: wrap; gap: 8px; }
+.device dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 12px; line-height: 18px; }
+.device dd { margin: 0; }
+.agent { overflow-wrap: anywhere; font-size: 12px; line-height: 18px; }
+.recovery { display: flex; flex-direction: column; gap: 8px; }
+.recovery input { width: 100%; box-sizing: border-box; }

@@ -178,7 +178,7 @@ async function serveRoute(route: WebRoute): Promise<{ readonly origin: string; c
 function browserCookie(connection: HostConnectionHandle, origin: string): string {
   const target = new URL(connection.authenticatedUrl(origin))
   let setCookie: string | undefined
-  connection.authorizeIndex({
+  const authorized = connection.authorizeIndex({
     method: 'GET',
     url: `${target.pathname}${target.search}`,
     headers: { host: target.host },
@@ -186,6 +186,7 @@ function browserCookie(connection: HostConnectionHandle, origin: string): string
     writeHead(_status, headers) { setCookie = headers?.['set-cookie'] },
     end() {},
   })
+  expect(authorized).toBe(false)
   if (setCookie === undefined) throw new Error('gateway fixture did not receive an authentication cookie')
   return setCookie.split(';', 1)[0]!
 }

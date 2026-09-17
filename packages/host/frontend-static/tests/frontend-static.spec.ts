@@ -30,7 +30,7 @@ afterEach(async () => {
 })
 
 /** Write a dist fixture and the authenticated Web rows, then boot them through the real Loader. */
-async function loadComposition(): Promise<Context> {
+async function loadComposition(managed = false): Promise<Context> {
   root = await mkdtemp(join(tmpdir(), 'dsh-frontend-static-'))
   const dist = join(root, 'dist')
   await mkdir(dist)
@@ -51,6 +51,8 @@ async function loadComposition(): Promise<Context> {
     "    host: '127.0.0.1'",
     '    port: 0',
     "- name: '@deepseek-ai/dsh-client-connection'",
+    '  config:',
+    `    browserSessionManagement: ${String(managed)}`,
     '- id: frontend',
     "  name: '@deepseek-ai/dsh-host-frontend-static'",
     '  config:',
@@ -94,6 +96,36 @@ async function request(port: number, path: string, init?: RequestInit): Promise<
 }
 
 describe('real Loader composition', () => {
+  it('commits managed logins and enforces revocation through the actual HTTP bridge', async () => {
+    const loaded = await loadComposition(true)
+    const origin = `http://127.0.0.1:${String(loaded.webServer.port)}`
+    const exchange = async () => {
+      const response = await fetch(loaded.connection.authenticatedUrl(origin), { redirect: 'manual' })
+      expect(response.status).toBe(303)
+      return response.headers.get('set-cookie')!.split(';')[0]!
+    }
+    const first = await exchange()
+    const second = await exchange()
+    const api = (cookie: string, action?: unknown) => fetch(`${origin}/api/browser-security`, {
+      method: action === undefined ? 'GET' : 'POST',
+      headers: { cookie, origin, 'content-type': 'application/json' },
+      ...(action === undefined ? {} : { body: JSON.stringify(action) }),
+    })
+    expect((await api('')).status).toBe(401)
+    const view = await (await api(first)).json() as { sessions: { id: string }[] }
+    expect(view.sessions).toHaveLength(2)
+    const revoked = await api(first, { action: 'revoke', id: view.sessions[1].id })
+    expect(revoked.status).toBe(200)
+    expect(revoked.headers.get('cache-control')).toBe('no-store')
+    expect((await api(second)).status).toBe(401)
+    expect((await fetch(origin, { headers: { cookie: second } })).status).toBe(401)
+    const index = await fetch(origin, { headers: { cookie: first } })
+    expect(index.status).toBe(200)
+    expect(await index.text()).toContain('__DSH_BROWSER_SECURITY__')
+    const connectionEntry = [...loaded.loader.entries()].find(entry => entry.options.name === '@deepseek-ai/dsh-client-connection')!
+    await connectionEntry.fiber!.dispose()
+    expect((await api(first)).status).toBe(404)
+  })
   it('serves explicit index entries and files while preserving HTTP error semantics', { timeout: 60_000 }, async () => {
     const loaded = await loadComposition()
     const unloaded = [...loaded.loader.entries()]
