@@ -29,7 +29,7 @@ kind: "package-reference"
 
 ### 「通用」分区
 
-当 Host 启用 Connection 的 `browserSessionManagement` 时，shell 还会注册“登录安全”。该页面列出浏览器会话，支持设备改名和撤销、当前 cookie 更新、启动链接或全局签名密钥轮换。全局操作会在退出后显示私密恢复链接。页面使用已认证的 Fetch 回调和本地化文案；不会把令牌保存在浏览器存储中。[Connection](../connection/README.zh.md#managed-browser-sessions)负责授权与持久化。
+当 Host 启用 Connection 的 `browserSessionManagement` 时，shell 还会注册“登录设备”。精简列表显示设备名称、浏览器摘要、最近活动和当前设备标记。每台设备的“更多”菜单提供修改名称、查看详情和退出登录；没有其他会话时，“退出其他设备”不可用。操作按钮使用描边样式。“高级安全”默认收起，包含本机凭证更新、登录链接更换和全部退出；签名密钥轮换位于其中的“维护操作”折叠区。每项敏感操作都会确认其具体影响，全局操作会在退出后显示私密恢复链接。页面使用已认证的 Fetch 回调和本地化文案；不会把令牌保存在浏览器存储中。[Connection](../connection/README.zh.md#managed-browser-sessions)负责授权与持久化。
 
 「通用」分区承载由功能包注册进 `settings.general.item` 的行——它没有内置行。功能插件拥有行文案与行为；外壳只提供分区及其 slot。例如「外观」行位于 ui-theme。
 

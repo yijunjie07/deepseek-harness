@@ -1,10 +1,25 @@
-.section { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
-.controls { border: 0; padding: 0; min-width: 0; }
-.actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
-.device { padding: 12px 0; border-bottom: 0.5px solid var(--dsw-alias-border-l2); }
-.device form { display: flex; flex-wrap: wrap; gap: 8px; }
-.device dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 12px; line-height: 18px; }
-.device dd { margin: 0; }
-.agent { overflow-wrap: anywhere; font-size: 12px; line-height: 18px; }
+.section { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+.header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.header h3 { margin: 0 0 8px; }
+.header > button { flex-shrink: 0; }
+.muted { margin: 0; color: var(--dsw-alias-label-secondary); font-size: 13px; line-height: 20px; }
+.controls { border: 0; padding: 0; min-width: 0; margin: 0; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
+.device { padding: 16px 0; border-bottom: 0.5px solid var(--dsw-alias-border-l2); }
+.deviceRow { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.deviceSummary { min-width: 0; }
+.deviceTitle { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 4px; overflow-wrap: anywhere; }
+.badge { font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-secondary); }
+.device form { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.device form input { min-width: 0; max-width: 100%; box-sizing: border-box; }
+.device dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; font-size: 12px; line-height: 18px; }
+.device dd { margin: 0; overflow-wrap: anywhere; }
+.details { margin-top: 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.agent { overflow-wrap: anywhere; font-size: 12px; line-height: 18px; margin: 0; max-width: 100%; }
+.advanced { padding-top: 16px; border-top: 0.5px solid var(--dsw-alias-border-l2); }
+.advancedBody { display: flex; flex-direction: column; gap: 20px; padding-top: 16px; }
+.securityAction { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-top: 12px; }
+.section .danger { color: var(--dsw-alias-state-error-primary); }
+.controls button { max-width: 100%; height: auto; min-height: 28px; white-space: normal; }
 .recovery { display: flex; flex-direction: column; gap: 8px; }
 .recovery input { width: 100%; box-sizing: border-box; }

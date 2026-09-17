@@ -18,11 +18,11 @@ After signing in, open **Settings → Models** to configure providers. Managed s
 
 ## Manage devices
 
-Open **Settings → Login security**. Each login from a fresh browser cookie jar creates a device session. Rename a device to identify it; the browser description is not a verified hardware identity. A copied cookie shares the same session and is revoked with it. Refresh the list to see activity, including connection heartbeats.
+Open **Settings → Login devices**. The list shows each device's name, browser, recent activity, and whether it is the current device. Use **More → Rename** to label a device and **More → View details** for its full browser description and login/expiry times. Each login from a fresh browser cookie jar creates a device session; browser descriptions are not verified hardware identities. A copied cookie shares the same session and is revoked with it. **Refresh devices** updates activity, including connection heartbeats.
 
-**Sign out device** revokes one device. **Sign out other devices** keeps the current session on this authority. **Renew current cookie** replaces only the current cookie; it cannot remotely install a new cookie on another browser. Revoked Gateway connections terminate immediately; already-dispatched unary operations are not rolled back.
+**More → Sign out** revokes that device, including the current browser when selected. **Sign out other devices** keeps the current session on this authority and is disabled when no other sessions exist. Both actions ask for confirmation and leave the login link unchanged. Revoked Gateway connections terminate immediately; already-dispatched unary operations are not rolled back.
 
-**Rotate launch link** invalidates the old startup URL while keeping existing sessions. **Sign out all and rotate link** revokes every authority's sessions. **Rotate global signing key** additionally replaces the signing secret; old keys have no grace period. The two global actions also sign out the current browser and show a new private login link. Save the link before leaving the page.
+Expand **Advanced security** for infrequent operations. **Renew this device’s login credential** replaces only the current cookie and invalidates its old copies; it cannot remotely install a new cookie on another browser. **Replace login link** invalidates the old startup URL while keeping existing sessions. **Sign out all devices and replace login link** revokes every authority's sessions. Under **Maintenance**, **Replace global signing key** additionally replaces the signing secret; old keys have no grace period. Each action confirms its specific effects. Both global actions also sign out the current browser and show a new private login link. Save the link before leaving the page.
 
 ## Recovery and updates
 

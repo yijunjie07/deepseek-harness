@@ -29,7 +29,7 @@ Users reach the shell through the sidebar's bottom Settings control; feature plu
 
 ### The General section
 
-When the Host enables Connection's `browserSessionManagement`, the shell also registers **Login security**. It lists browser sessions, renames and revokes devices, renews the current cookie, and rotates launch links or the global signing key. Global operations show a private recovery link after logout. The section uses authenticated Fetch callbacks and locale-owned copy; no token is kept in browser storage. [Connection](../connection/README.md#managed-browser-sessions) owns authorization and persistence.
+When the Host enables Connection's `browserSessionManagement`, the shell also registers **Login devices**. The compact list shows device names, browser summaries, recent activity, and the current-device marker. Each device's **More** menu offers rename, details, and sign out; **Sign out other devices** is disabled without other sessions. Outlined buttons expose actions. **Advanced security** starts collapsed and holds credential renewal, login-link replacement, and global logout; signing-key rotation sits inside its **Maintenance** disclosure. Each sensitive action confirms its specific effects, and global operations show a private recovery link after logout. The section uses authenticated Fetch callbacks and locale-owned copy; no token is kept in browser storage. [Connection](../connection/README.md#managed-browser-sessions) owns authorization and persistence.
 
 The General section holds rows registered into `settings.general.item` by feature packages — it has no built-in rows. Feature plugins own the row copy and behavior; the shell only provides the section and its slot. The Appearance row, for example, lives in ui-theme.
 
